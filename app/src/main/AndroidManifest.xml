@@ -23,6 +23,12 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="true"
+            android:label="Widget Settings"
+            android:theme="@style/Theme.Kalendar" />
+
         <receiver
             android:name=".ModernCalendarWidgetReceiver"
             android:exported="true">

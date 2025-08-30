@@ -45,9 +45,11 @@ import com.alirezaiyan.kalendar.widget.actions.Params
 import com.alirezaiyan.kalendar.widget.actions.SelectDayAction
 import com.alirezaiyan.kalendar.widget.state.WidgetState.readSelectedDay
 import com.alirezaiyan.kalendar.widget.state.WidgetState.readYearMonth
+import com.alirezaiyan.kalendar.widget.state.WidgetState.readSelectedCountry
 import com.alirezaiyan.kalendar.widget.ui.WidgetColors
 import com.alirezaiyan.kalendar.widget.utils.CalendarUtils.buildMonthGrid
 import com.alirezaiyan.kalendar.widget.utils.CalendarUtils.shifted
+import com.alirezaiyan.kalendar.data.BankHolidayData
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -81,10 +83,16 @@ class ModernCalendarWidget : GlanceAppWidget() {
         val today = LocalDate.now()
         val yearMonth = prefs.readYearMonth() ?: YearMonth.from(today)
         val selected = prefs.readSelectedDay()?.let { LocalDate.ofEpochDay(it) }
+        val selectedCountry = prefs.readSelectedCountry()
 
         val weekFields = WeekFields.of(locale)
         val firstDow = weekFields.firstDayOfWeek
         val monthMatrix = buildMonthGrid(yearMonth, firstDow)
+        
+        // Get bank holidays for the current year
+        val bankHolidays = selectedCountry?.let { 
+            BankHolidayData.getBankHolidays(it, yearMonth.year) 
+        } ?: emptyList()
 
         Column(
             modifier = GlanceModifier
@@ -117,6 +125,7 @@ class ModernCalendarWidget : GlanceAppWidget() {
                 inMonth = { it.month == yearMonth.month },
                 today = today,
                 selected = selected,
+                bankHolidays = bankHolidays,
                 onDayClick = { date ->
                     actionRunCallback<SelectDayAction>(
                         actionParametersOf(Params.EpochDay to date.toEpochDay())
@@ -226,6 +235,7 @@ private fun MonthGridView(
     inMonth: (LocalDate) -> Boolean,
     today: LocalDate,
     selected: LocalDate?,
+    bankHolidays: List<com.alirezaiyan.kalendar.data.BankHoliday>,
     onDayClick: (LocalDate) -> Action,
 ) {
     Column(modifier = GlanceModifier.fillMaxWidth()) {
@@ -235,14 +245,17 @@ private fun MonthGridView(
                     val isInMonth = inMonth(date)
                     val isToday = date == today
                     val isSelected = selected == date
+                    val isBankHoliday = bankHolidays.any { it.date == date }
 
                     val bg = when {
+                        isBankHoliday -> WidgetColors.bankHoliday
                         isSelected -> WidgetColors.primary
                         isToday -> WidgetColors.todayContainer
                         else -> WidgetColors.transparent
                     }
 
                     val textColor = when {
+                        isBankHoliday -> WidgetColors.onBankHoliday
                         isSelected -> WidgetColors.onPrimaryContainer
                         isToday -> WidgetColors.onTodayContainer
                         isInMonth -> WidgetColors.onSurface
@@ -250,7 +263,7 @@ private fun MonthGridView(
                     }
 
                     val borderColor = when {
-                        isToday && !isSelected -> WidgetColors.border
+                        isToday && !isSelected && !isBankHoliday -> WidgetColors.border
                         else -> WidgetColors.transparent
                     }
 
@@ -269,6 +282,7 @@ private fun MonthGridView(
                             style = TextStyle(
                                 color = textColor,
                                 fontWeight = when {
+                                    isBankHoliday -> FontWeight.Bold
                                     isSelected -> FontWeight.Bold
                                     isToday -> FontWeight.Medium
                                     else -> FontWeight.Normal
