@@ -79,7 +79,12 @@ class CalendarService(private val country: Country) {
      * Get the display name for a day of week
      */
     fun getDayOfWeekDisplayName(dayOfWeek: DayOfWeek): String = calendarSystem.getDayOfWeekDisplayName(dayOfWeek)
-    
+
+    /**
+     * Get the full display name for a day of week
+     */
+    fun getFullDayOfWeekDisplayName(dayOfWeek: DayOfWeek): String = calendarSystem.getFullDayOfWeekDisplayName(dayOfWeek)
+
     /**
      * Convert a LocalDate to CalendarDate in the current calendar system
      */

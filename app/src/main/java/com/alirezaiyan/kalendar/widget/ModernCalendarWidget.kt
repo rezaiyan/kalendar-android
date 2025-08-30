@@ -95,6 +95,9 @@ class ModernCalendarWidget : GlanceAppWidget() {
     private fun CalendarContent(context: Context) {
         val prefs = currentState<Preferences>()
 
+        // Responsive design - use adaptive layout that works across all widget sizes
+        // We'll use a more conservative approach with better space management
+
         val countryRepository = remember { CountryRepository(context) }
         val selectedCountry by countryRepository.selectedCountry.collectAsState(initial = Country.UNITED_STATES)
 
@@ -125,16 +128,22 @@ class ModernCalendarWidget : GlanceAppWidget() {
         val displayMonth: Int
         
         if (persistedYm != null) {
-            // Convert the stored Gregorian YearMonth to the current calendar system
-            val gregorianDate = persistedYm.atDay(1) // Use first day of month
             if (selectedCountry.calendarType == CalendarType.Solar) {
-                // Convert Gregorian to Solar Hijri
-                val persianDate = saman.zamani.persiandate.PersianDate()
-                persianDate.setGrgYear(gregorianDate.year)
-                persianDate.setGrgMonth(gregorianDate.monthValue)
-                persianDate.setGrgDay(gregorianDate.dayOfMonth)
-                displayYear = persianDate.shYear
-                displayMonth = persianDate.shMonth
+                // Check if this is a Persian date stored in special format (year >= 3000)
+                if (persistedYm.year >= 3000) {
+                    // Extract Persian year and month from special format
+                    displayYear = persistedYm.year - 3000
+                    displayMonth = persistedYm.monthValue
+                } else {
+                    // Fallback: convert Gregorian to Solar Hijri (for backward compatibility)
+                    val gregorianDate = persistedYm.atDay(1)
+                    val persianDate = saman.zamani.persiandate.PersianDate()
+                    persianDate.setGrgYear(gregorianDate.year)
+                    persianDate.setGrgMonth(gregorianDate.monthValue)
+                    persianDate.setGrgDay(gregorianDate.dayOfMonth)
+                    displayYear = persianDate.shYear
+                    displayMonth = persianDate.shMonth
+                }
             } else {
                 // For Gregorian, use directly
                 displayYear = persistedYm.year
@@ -156,7 +165,7 @@ class ModernCalendarWidget : GlanceAppWidget() {
             modifier = GlanceModifier
                 .fillMaxSize()
                 .background(WidgetColors.surface)
-                .padding(6.dp),
+                .padding(10.dp), // Consistent padding that works across all sizes
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Modern Header
@@ -164,7 +173,7 @@ class ModernCalendarWidget : GlanceAppWidget() {
                 year = displayYear,
                 month = displayMonth,
                 calendarService = calendarService,
-                isCompact = true,
+                isCompact = true, // Use compact mode for better space utilization
                 today = today,
                 selected = selected,
                 onPrev = actionRunCallback<NavigateMonthAction>(
@@ -178,20 +187,20 @@ class ModernCalendarWidget : GlanceAppWidget() {
                 ),
             )
 
-            Spacer(modifier = GlanceModifier.height(2.dp))
+            Spacer(modifier = GlanceModifier.height(6.dp))
 
             // Days of week with modern styling
             DaysOfWeekRow(calendarService, true)
 
-            Spacer(modifier = GlanceModifier.height(2.dp))
+            Spacer(modifier = GlanceModifier.height(4.dp))
 
             // Calendar grid with premium spacing
             MonthGridView(
                 matrix = monthMatrix,
                 selected = selected,
                 bankHolidays = bankHolidays,
-                dayCellHeight = 26.dp,
-                dayCellRadius = 13.dp,
+                dayCellHeight = 28.dp, // Optimized for all widget sizes
+                dayCellRadius = 14.dp, // Modern rounded corners
                 onDayClick = { date ->
                     try {
                         // Convert CalendarDate to LocalDate for epoch day calculation
@@ -201,16 +210,17 @@ class ModernCalendarWidget : GlanceAppWidget() {
                         )
                     } catch (e: java.time.DateTimeException) {
                         // Handle invalid dates gracefully - do nothing
-                        actionRunCallback<SelectDayAction>(
+                    actionRunCallback<SelectDayAction>(
                             actionParametersOf(Params.EpochDay to 0L)
-                        )
+                    )
                     }
                 }
             )
 
-            Spacer(modifier = GlanceModifier.height(2.dp))
+            Spacer(modifier = GlanceModifier.height(6.dp))
 
-            FooterOpenCalendar(context)
+            // Footer with Open Calendar button
+            FooterOpenCalendar(context, true)
         }
     }
 
@@ -232,23 +242,24 @@ private fun Header(
     val monthName = calendarService.getMonthDisplayName(month)
     val yearStr = year.toString()
 
-    val buttonSize = if (isCompact) 28.dp else 32.dp
-    val monthFontSize = if (isCompact) 16.sp else 18.sp
-    val yearFontSize = if (isCompact) 12.sp else 14.sp
+    val buttonSize = if (isCompact) 30.dp else 32.dp
+    val monthFontSize = if (isCompact) 17.sp else 18.sp
+    val yearFontSize = if (isCompact) 13.sp else 14.sp
+    val buttonFontSize = if (isCompact) 11.sp else 12.sp
 
     Column(
         modifier = GlanceModifier.fillMaxWidth()
     ) {
         // Main header row with navigation and month/year
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
+    Row(
+        modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = GlanceModifier
                     .size(buttonSize)
-                    .background(WidgetColors.surfaceElevated)
-                    .cornerRadius(buttonSize / 2)
+                    .background(WidgetColors.buttonBackground)
+                    .cornerRadius(16.dp)
                     .clickable(onPrev),
                 contentAlignment = Alignment.Center
             ) {
@@ -260,9 +271,9 @@ private fun Header(
 
             Column(
                 modifier = GlanceModifier.defaultWeight(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
                     text = monthName,
                     style = TextStyle(
                         color = WidgetColors.onSurface,
@@ -270,9 +281,9 @@ private fun Header(
                         fontSize = monthFontSize
                     )
                 )
-                Text(
+            Text(
                     text = yearStr,
-                    style = TextStyle(
+                style = TextStyle(
                         color = WidgetColors.onSurfaceMuted,
                         fontWeight = FontWeight.Normal,
                         fontSize = yearFontSize
@@ -280,12 +291,12 @@ private fun Header(
                 )
             }
 
-            // Next button with icon
+            // Next button with modern styling
             Box(
                 modifier = GlanceModifier
                     .size(buttonSize)
-                    .background(WidgetColors.surfaceElevated)
-                    .cornerRadius(buttonSize / 2)
+                    .background(WidgetColors.buttonBackground)
+                    .cornerRadius(16.dp)
                     .clickable(onNext),
                 contentAlignment = Alignment.Center
             ) {
@@ -296,23 +307,23 @@ private fun Header(
             }
         }
 
-        // "Go to Today" button - only show if we're not viewing the current month
+                        // "Go to Today" button - only show if we're not viewing the current month
         val isCurrentMonth = (year == today.year && month == today.month)
         if (!isCurrentMonth) {
-            Spacer(modifier = GlanceModifier.height(4.dp))
+            Spacer(modifier = GlanceModifier.height(3.dp))
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(
                     modifier = GlanceModifier
-                        .background(WidgetColors.todayContainer)
-                        .cornerRadius(12.dp)
-                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                        .background(WidgetColors.primary)
+                        .cornerRadius(16.dp)
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
                         .clickable(onGoToToday),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
+        Text(
                         text = "Go to Today",
                         style = TextStyle(
                             color = WidgetColors.onTodayContainer,
@@ -328,8 +339,8 @@ private fun Header(
 
 @Composable
 private fun DaysOfWeekRow(calendarService: CalendarService, isCompact: Boolean = false) {
-    val fontSize = if (isCompact) 10.sp else 11.sp
-    val verticalPadding = if (isCompact) 4.dp else 8.dp
+    val fontSize = if (isCompact) 11.sp else 12.sp
+    val verticalPadding = if (isCompact) 6.dp else 8.dp
     val firstDow = calendarService.getFirstDayOfWeek()
 
     Row(modifier = GlanceModifier.fillMaxWidth()) {
@@ -343,7 +354,7 @@ private fun DaysOfWeekRow(calendarService: CalendarService, isCompact: Boolean =
                 Text(
                     text = calendarService.getDayOfWeekDisplayName(dow),
                     style = TextStyle(
-                        color = WidgetColors.onSurfaceSubtle,
+                        color = WidgetColors.onSurfaceMuted,
                         fontWeight = FontWeight.Medium,
                         fontSize = fontSize
                     )
@@ -382,14 +393,14 @@ private fun MonthGridView(
 
                     val bg = when {
                         isBankHoliday -> WidgetColors.bankHoliday
-                        isSelected -> WidgetColors.primary
+                        isSelected -> WidgetColors.selectedContainer
                         isToday -> WidgetColors.todayContainer
                         else -> WidgetColors.transparent
                     }
 
                     val textColor = when {
                         isBankHoliday -> WidgetColors.onBankHoliday
-                        isSelected -> WidgetColors.onPrimaryContainer
+                        isSelected -> WidgetColors.onSelectedContainer
                         isToday -> WidgetColors.onTodayContainer
                         isInMonth -> WidgetColors.onSurface
                         else -> WidgetColors.onSurfaceSubtle
@@ -414,10 +425,10 @@ private fun MonthGridView(
                                 fontWeight = when {
                                     isBankHoliday -> FontWeight.Bold
                                     isSelected -> FontWeight.Bold
-                                    isToday -> FontWeight.Medium
-                                    else -> FontWeight.Normal
+                                    isToday -> FontWeight.Bold
+                                    else -> FontWeight.Medium
                                 },
-                                fontSize = 14.sp
+                                fontSize = if (dayCellHeight <= 24.dp) 11.sp else if (dayCellHeight <= 28.dp) 12.sp else 13.sp
                             )
                         )
                     }
@@ -428,26 +439,29 @@ private fun MonthGridView(
 }
 
 @Composable
-private fun FooterOpenCalendar(context: Context) {
+private fun FooterOpenCalendar(context: Context, isCompact: Boolean = false) {
     Row(
         modifier = GlanceModifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
+                Box(
             modifier = GlanceModifier
-                .background(WidgetColors.surfaceElevated)
-                .cornerRadius(20.dp)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .background(WidgetColors.surfaceContainer)
+                .cornerRadius(if (isCompact) 20.dp else 24.dp)
+                .padding(
+                    horizontal = if (isCompact) 16.dp else 20.dp,
+                    vertical = if (isCompact) 8.dp else 10.dp
+                )
                 .clickable(actionStartActivity(Intent(context, MainActivity::class.java))),
             contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Open Calendar",
-                style = TextStyle(
+    ) {
+        Text(
+            text = "Open Calendar",
+            style = TextStyle(
                     color = WidgetColors.onSurfaceMuted,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 12.sp
+                fontWeight = FontWeight.Medium,
+                    fontSize = if (isCompact) 11.sp else 13.sp
                 )
             )
         }

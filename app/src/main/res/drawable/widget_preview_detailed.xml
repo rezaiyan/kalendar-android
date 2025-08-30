@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- Background -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />
+            <corners android:radius="16dp" />
+            <stroke android:width="1dp" android:color="#E0E0E0" />
+        </shape>
+    </item>
+    
+    <!-- Header background -->
+    <item android:top="8dp" android:left="8dp" android:right="8dp" android:height="40dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#F5F5F5" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+    
+    <!-- Month text -->
+    <item android:top="18dp" android:left="16dp" android:width="60dp" android:height="16dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#424242" />
+            <corners android:radius="2dp" />
+        </shape>
+    </item>
+    
+    <!-- Year text -->
+    <item android:top="20dp" android:left="80dp" android:width="40dp" android:height="12dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#757575" />
+            <corners android:radius="2dp" />
+        </shape>
+    </item>
+    
+    <!-- Navigation buttons -->
+    <item android:top="12dp" android:right="12dp" android:width="24dp" android:height="24dp">
+        <shape android:shape="oval">
+            <solid android:color="#E0E0E0" />
+        </shape>
+    </item>
+    
+    <item android:top="12dp" android:right="40dp" android:width="24dp" android:height="24dp">
+        <shape android:shape="oval">
+            <solid android:color="#E0E0E0" />
+        </shape>
+    </item>
+    
+    <!-- Days of week row -->
+    <item android:top="56dp" android:left="8dp" android:right="8dp" android:height="20dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#F8F9FA" />
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+    
+    <!-- Day labels -->
+    <item android:top="60dp" android:left="12dp" android:width="8dp" android:height="8dp">
+        <shape android:shape="oval">
+            <solid android:color="#9E9E9E" />
+        </shape>
+    </item>
+    <item android:top="60dp" android:left="24dp" android:width="8dp" android:height="8dp">
+        <shape android:shape="oval">
+            <solid android:color="#9E9E9E" />
+        </shape>
+    </item>
+    <item android:top="60dp" android:left="36dp" android:width="8dp" android:height="8dp">
+        <shape android:shape="oval">
+            <solid android:color="#9E9E9E" />
+        </shape>
+    </item>
+    <item android:top="60dp" android:left="48dp" android:width="8dp" android:height="8dp">
+        <shape android:shape="oval">
+            <solid android:color="#9E9E9E" />
+        </shape>
+    </item>
+    <item android:top="60dp" android:left="60dp" android:width="8dp" android:height="8dp">
+        <shape android:shape="oval">
+            <solid android:color="#9E9E9E" />
+        </shape>
+    </item>
+    <item android:top="60dp" android:left="72dp" android:width="8dp" android:height="8dp">
+        <shape android:shape="oval">
+            <solid android:color="#9E9E9E" />
+        </shape>
+    </item>
+    <item android:top="60dp" android:left="84dp" android:width="8dp" android:height="8dp">
+        <shape android:shape="oval">
+            <solid android:color="#9E9E9E" />
+        </shape>
+    </item>
+    
+    <!-- Calendar grid -->
+    <item android:top="84dp" android:left="8dp" android:right="8dp" android:bottom="8dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#FAFAFA" />
+            <corners android:radius="8dp" />
+        </shape>
+    </item>
+    
+    <!-- Sample day cells -->
+    <item android:top="88dp" android:left="12dp" android:width="20dp" android:height="20dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#E3F2FD" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+    <item android:top="88dp" android:left="36dp" android:width="20dp" android:height="20dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#4CAF50" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+    <item android:top="88dp" android:left="60dp" android:width="20dp" android:height="20dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#F5F5F5" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+    <item android:top="88dp" android:left="84dp" android:width="20dp" android:height="20dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFEBEE" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+    
+    <!-- More day cells -->
+    <item android:top="112dp" android:left="12dp" android:width="20dp" android:height="20dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#F5F5F5" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+    <item android:top="112dp" android:left="36dp" android:width="20dp" android:height="20dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#F5F5F5" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+    <item android:top="112dp" android:left="60dp" android:width="20dp" android:height="20dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#F5F5F5" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+    <item android:top="112dp" android:left="84dp" android:width="20dp" android:height="20dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#F5F5F5" />
+            <corners android:radius="10dp" />
+        </shape>
+    </item>
+    
+    <!-- Footer button -->
+    <item android:bottom="8dp" android:left="16dp" android:right="16dp" android:height="24dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#F1F3F4" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+    
+</layer-list>

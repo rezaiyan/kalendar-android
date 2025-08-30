@@ -42,7 +42,7 @@ class GregorianCalendarSystem(private val locale: Locale = Locale.getDefault()) 
     }
     
     override fun getDayOfWeekNames(): List<String> {
-        return DayOfWeek.values().map { day ->
+        return DayOfWeek.entries.map { day ->
             day.getDisplayName(TextStyle.SHORT, locale)
         }
     }
@@ -107,5 +107,9 @@ class GregorianCalendarSystem(private val locale: Locale = Locale.getDefault()) 
     
     override fun getDayOfWeekDisplayName(dayOfWeek: DayOfWeek): String {
         return dayOfWeek.getDisplayName(TextStyle.SHORT, locale)
+    }
+
+    override fun getFullDayOfWeekDisplayName(dayOfWeek: DayOfWeek): String {
+        return dayOfWeek.getDisplayName(TextStyle.FULL, locale)
     }
 }

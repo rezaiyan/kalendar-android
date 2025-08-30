@@ -70,6 +70,11 @@ interface CalendarSystem {
      * Get the display name for a day of week
      */
     fun getDayOfWeekDisplayName(dayOfWeek: DayOfWeek): String
+
+    /**
+     * Get the full display name for a day of week
+     */
+    fun getFullDayOfWeekDisplayName(dayOfWeek: DayOfWeek): String
 }
 
 /**

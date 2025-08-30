@@ -20,6 +20,10 @@ class SolarHijriCalendarSystem(
         "ش", "ی", "د", "س", "چ", "پ", "ج" // شنبه..جمعه
     )
 
+    private val persianFillDayNames = listOf(
+        "شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهار‌شنبه", "پنح‌شنبه", "جمعه" // شنبه..جمعه
+    )
+
     override fun getCurrentDate(): CalendarDate {
         val today = java.time.LocalDate.now()
         return gregorianToSolarHijri(today)
@@ -149,6 +153,14 @@ class SolarHijriCalendarSystem(
         // SATURDAY -> 0, SUNDAY -> 1, MONDAY -> 2, ..., FRIDAY -> 6
         val index = (dayOfWeek.ordinal + 2) % 7
         return if (index in persianDayNames.indices) persianDayNames[index] else dayOfWeek.name
+    }
+
+
+    override fun getFullDayOfWeekDisplayName(dayOfWeek: DayOfWeek): String {
+        // Map Java DayOfWeek (MON=0..SUN=6 by ordinal) to Persian order (SAT..FRI)
+        // SATURDAY -> 0, SUNDAY -> 1, MONDAY -> 2, ..., FRIDAY -> 6
+        val index = (dayOfWeek.ordinal + 2) % 7
+        return if (index in persianDayNames.indices) persianFillDayNames[index] else dayOfWeek.name
     }
 
     // ---------- Internals powered by PersianDate ----------

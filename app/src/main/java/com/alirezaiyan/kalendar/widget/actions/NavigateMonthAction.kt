@@ -37,9 +37,9 @@ class NavigateMonthAction : ActionCallback {
                     val persianDate = PersianDate()
                     val currentYear = persianDate.shYear
                     val currentMonth = persianDate.shMonth
-                    // Store as Gregorian equivalent for consistency
-                    val gregorianDate = LocalDate.of(persianDate.grgYear, persianDate.grgMonth, persianDate.grgDay)
-                    YearMonth.from(gregorianDate)
+                    // Store the Persian month directly as a special format
+                    // Use a high year number to avoid conflicts with Gregorian years
+                    YearMonth.of(3000 + currentYear, currentMonth)
                 } else {
                     // For Gregorian calendar
                     YearMonth.from(LocalDate.now())
@@ -47,8 +47,7 @@ class NavigateMonthAction : ActionCallback {
             } else {
                 val ym = prefs.readYearMonth() ?: if (selectedCountry.calendarType == CalendarType.Solar) {
                     val persianDate = PersianDate()
-                    val gregorianDate = LocalDate.of(persianDate.grgYear, persianDate.grgMonth, persianDate.grgDay)
-                    YearMonth.from(gregorianDate)
+                    YearMonth.of(3000 + persianDate.shYear, persianDate.shMonth)
                 } else {
                     YearMonth.from(LocalDate.now())
                 }
