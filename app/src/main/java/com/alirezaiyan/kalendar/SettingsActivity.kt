@@ -20,10 +20,12 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.alirezaiyan.kalendar.data.Country
 import com.alirezaiyan.kalendar.ui.theme.KalendarTheme
+import com.alirezaiyan.kalendar.widget.state.WidgetState.SELECTED_COUNTRY
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-val Context.dataStore by preferencesDataStore("settings")
+// Use the same DataStore name as the widget
+val Context.settingsDataStore by preferencesDataStore("glance_app_widget_state")
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,9 +53,9 @@ fun SettingsScreen() {
 
     // Load current country setting
     LaunchedEffect(Unit) {
-        val prefs = context.dataStore.data.first()
-        val countryCode = prefs[stringPreferencesKey("selected_country")]
-        selectedCountry = countryCode?.let { Country.fromCountryCode(it) }
+        val prefs = context.settingsDataStore.data.first()
+        val countryCode = prefs[SELECTED_COUNTRY]
+        selectedCountry = countryCode?.let { Country.fromCountryCode(it) } ?: Country.UNITED_STATES
         isLoading = false
     }
 
@@ -117,8 +119,8 @@ fun SettingsScreen() {
                     onClick = {
                         selectedCountry?.let { country ->
                             scope.launch {
-                                context.dataStore.edit { prefs ->
-                                    prefs[stringPreferencesKey("selected_country")] = country.countryCode
+                                context.settingsDataStore.edit { prefs ->
+                                    prefs[SELECTED_COUNTRY] = country.countryCode
                                 }
                                 // Update widget
                                 val intent = Intent(context, ModernCalendarWidgetReceiver::class.java).apply {

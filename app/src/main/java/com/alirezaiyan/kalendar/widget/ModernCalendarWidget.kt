@@ -40,13 +40,16 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.alirezaiyan.kalendar.R
+import com.alirezaiyan.kalendar.data.BankHoliday
 import com.alirezaiyan.kalendar.widget.actions.NavigateMonthAction
 import com.alirezaiyan.kalendar.widget.actions.Params
 import com.alirezaiyan.kalendar.widget.actions.SelectDayAction
 import com.alirezaiyan.kalendar.widget.state.WidgetState.readSelectedDay
 import com.alirezaiyan.kalendar.widget.state.WidgetState.readYearMonth
-import com.alirezaiyan.kalendar.widget.state.WidgetState.readSelectedCountry
+import com.alirezaiyan.kalendar.data.CountryRepository
+import com.alirezaiyan.kalendar.data.Country
 import com.alirezaiyan.kalendar.widget.ui.WidgetColors
+import androidx.compose.runtime.collectAsState
 import com.alirezaiyan.kalendar.widget.utils.CalendarUtils.buildMonthGrid
 import com.alirezaiyan.kalendar.widget.utils.CalendarUtils.shifted
 import com.alirezaiyan.kalendar.data.BankHolidayData
@@ -71,28 +74,29 @@ class ModernCalendarWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
-            CalendarContent()
+            CalendarContent(context = context)
         }
     }
 
     @Composable
-    private fun CalendarContent() {
+    private fun CalendarContent(context: Context) {
         val prefs = currentState<Preferences>()
 
         val locale = Locale.getDefault()
         val today = LocalDate.now()
         val yearMonth = prefs.readYearMonth() ?: YearMonth.from(today)
         val selected = prefs.readSelectedDay()?.let { LocalDate.ofEpochDay(it) }
-        val selectedCountry = prefs.readSelectedCountry()
+        
+        // Get country from the shared repository
+        val countryRepository = CountryRepository(context)
+        val selectedCountry = countryRepository.selectedCountry.collectAsState(initial = Country.UNITED_STATES).value
 
         val weekFields = WeekFields.of(locale)
         val firstDow = weekFields.firstDayOfWeek
         val monthMatrix = buildMonthGrid(yearMonth, firstDow)
         
         // Get bank holidays for the current year
-        val bankHolidays = selectedCountry?.let { 
-            BankHolidayData.getBankHolidays(it, yearMonth.year) 
-        } ?: emptyList()
+        val bankHolidays = BankHolidayData.getBankHolidays(selectedCountry, yearMonth.year)
 
         Column(
             modifier = GlanceModifier
@@ -235,7 +239,7 @@ private fun MonthGridView(
     inMonth: (LocalDate) -> Boolean,
     today: LocalDate,
     selected: LocalDate?,
-    bankHolidays: List<com.alirezaiyan.kalendar.data.BankHoliday>,
+    bankHolidays: List<BankHoliday>,
     onDayClick: (LocalDate) -> Action,
 ) {
     Column(modifier = GlanceModifier.fillMaxWidth()) {

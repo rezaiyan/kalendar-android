@@ -22,8 +22,8 @@ object WidgetState {
     fun Preferences.readSelectedDay(): Long? = 
         this[SELECTED_EPOCH_DAY]
     
-    fun Preferences.readSelectedCountry(): Country? = 
-        this[SELECTED_COUNTRY]?.let { Country.fromCountryCode(it) }
+    fun Preferences.readSelectedCountry(): Country = 
+        this[SELECTED_COUNTRY]?.let { Country.fromCountryCode(it) } ?: Country.UNITED_STATES
     
     fun Long.toLocalDate(): LocalDate = LocalDate.ofEpochDay(this)
     

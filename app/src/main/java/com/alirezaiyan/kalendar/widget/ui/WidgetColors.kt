@@ -66,10 +66,10 @@ object WidgetColors {
         day = Color(0xFFE5E7EB),
         night = Color(0xFF374151)
     )
-    
+
     val bankHoliday = ColorProvider(
-        day = Color(0xFFDC2626),
-        night = Color(0xFFEF4444)
+        day = Color(0xFFF1A8A8),
+        night = Color(0xFFF8B4B4)
     )
     
     val onBankHoliday = ColorProvider(
