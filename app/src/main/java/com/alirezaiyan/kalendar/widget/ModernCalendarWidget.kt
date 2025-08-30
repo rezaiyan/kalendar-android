@@ -49,18 +49,27 @@ import com.alirezaiyan.kalendar.widget.state.WidgetState.readSelectedDay
 import com.alirezaiyan.kalendar.widget.state.WidgetState.readYearMonth
 import com.alirezaiyan.kalendar.data.CountryRepository
 import com.alirezaiyan.kalendar.data.Country
+import com.alirezaiyan.kalendar.data.CalendarType
 import com.alirezaiyan.kalendar.widget.ui.WidgetColors
 import androidx.compose.runtime.collectAsState
-import com.alirezaiyan.kalendar.widget.utils.CalendarUtils.buildMonthGrid
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import com.alirezaiyan.kalendar.MainActivity
-import com.alirezaiyan.kalendar.widget.utils.CalendarUtils.shifted
 import com.alirezaiyan.kalendar.data.BankHolidayData
+import com.alirezaiyan.kalendar.calendar.CalendarDate
+import com.alirezaiyan.kalendar.calendar.CalendarService
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.WeekFields
 import java.util.Locale
 import java.time.format.TextStyle as JTTextStyle
+
+// Utility function for shifting day of week array
+private fun Array<DayOfWeek>.shifted(firstDay: DayOfWeek): Array<DayOfWeek> {
+    val shift = firstDay.value - 1
+    return Array(size) { this[(it + shift) % size] }
+}
 
 class ModernCalendarWidget : GlanceAppWidget() {
 
@@ -80,25 +89,68 @@ class ModernCalendarWidget : GlanceAppWidget() {
         }
     }
 
+
+
     @Composable
     private fun CalendarContent(context: Context) {
         val prefs = currentState<Preferences>()
 
-        val locale = Locale.getDefault()
-        val today = LocalDate.now()
-        val yearMonth = prefs.readYearMonth() ?: YearMonth.from(today)
-        val selected = prefs.readSelectedDay()?.let { LocalDate.ofEpochDay(it) }
-        
-        // Get country from the shared repository
-        val countryRepository = CountryRepository(context)
-        val selectedCountry = countryRepository.selectedCountry.collectAsState(initial = Country.UNITED_STATES).value
+        val countryRepository = remember { CountryRepository(context) }
+        val selectedCountry by countryRepository.selectedCountry.collectAsState(initial = Country.UNITED_STATES)
 
-        val weekFields = WeekFields.of(locale)
-        val firstDow = weekFields.firstDayOfWeek
-        val monthMatrix = buildMonthGrid(yearMonth, firstDow)
+        // Create calendar service for the selected country
+        val calendarService = remember(selectedCountry.calendarType) {
+            CalendarService(selectedCountry)
+        }
+
+        // Always get current date (not remembered, so it updates when country changes)
+        val today = calendarService.getCurrentDate()
+        val currentYear = calendarService.getCurrentYear()
+        val currentMonth = calendarService.getCurrentMonth()
         
-        // Get bank holidays for the current year
-        val bankHolidays = BankHolidayData.getBankHolidays(selectedCountry, yearMonth.year)
+        // Get selected day from preferences, fallback to today
+        val selected = prefs.readSelectedDay()?.let { epochDay ->
+            try {
+                val localDate = java.time.LocalDate.ofEpochDay(epochDay)
+                calendarService.convertToCalendar(localDate)
+            } catch (e: java.time.DateTimeException) {
+                today
+            }
+        } ?: today
+
+        // Use persisted year-month if present (set by NavigateMonthAction)
+        // The stored YearMonth is always in Gregorian format, so we need to convert it
+        val persistedYm = prefs.readYearMonth()
+        val displayYear: Int
+        val displayMonth: Int
+        
+        if (persistedYm != null) {
+            // Convert the stored Gregorian YearMonth to the current calendar system
+            val gregorianDate = persistedYm.atDay(1) // Use first day of month
+            if (selectedCountry.calendarType == CalendarType.Solar) {
+                // Convert Gregorian to Solar Hijri
+                val persianDate = saman.zamani.persiandate.PersianDate()
+                persianDate.setGrgYear(gregorianDate.year)
+                persianDate.setGrgMonth(gregorianDate.monthValue)
+                persianDate.setGrgDay(gregorianDate.dayOfMonth)
+                displayYear = persianDate.shYear
+                displayMonth = persianDate.shMonth
+            } else {
+                // For Gregorian, use directly
+                displayYear = persistedYm.year
+                displayMonth = persistedYm.monthValue
+            }
+        } else {
+            // No persisted month, use current month
+            displayYear = currentYear
+            displayMonth = currentMonth
+        }
+
+        val firstDow = calendarService.getFirstDayOfWeek()
+        val monthMatrix = calendarService.buildMonthGrid(displayYear, displayMonth, firstDow)
+
+        // Get bank holidays for the displayed year
+        val bankHolidays = BankHolidayData.getBankHolidays(selectedCountry, displayYear)
 
         Column(
             modifier = GlanceModifier
@@ -109,36 +161,50 @@ class ModernCalendarWidget : GlanceAppWidget() {
         ) {
             // Modern Header
             Header(
-                yearMonth = yearMonth,
+                year = displayYear,
+                month = displayMonth,
+                calendarService = calendarService,
                 isCompact = true,
+                today = today,
+                selected = selected,
                 onPrev = actionRunCallback<NavigateMonthAction>(
                     actionParametersOf(Params.Direction to -1)
                 ),
                 onNext = actionRunCallback<NavigateMonthAction>(
                     actionParametersOf(Params.Direction to 1)
                 ),
+                onGoToToday = actionRunCallback<NavigateMonthAction>(
+                    actionParametersOf(Params.Direction to 0) // Special value to go to current month
+                ),
             )
 
             Spacer(modifier = GlanceModifier.height(2.dp))
 
             // Days of week with modern styling
-            DaysOfWeekRow(firstDow, true)
+            DaysOfWeekRow(calendarService, true)
 
             Spacer(modifier = GlanceModifier.height(2.dp))
 
             // Calendar grid with premium spacing
             MonthGridView(
                 matrix = monthMatrix,
-                inMonth = { it.month == yearMonth.month },
-                today = today,
                 selected = selected,
                 bankHolidays = bankHolidays,
                 dayCellHeight = 26.dp,
                 dayCellRadius = 13.dp,
                 onDayClick = { date ->
-                    actionRunCallback<SelectDayAction>(
-                        actionParametersOf(Params.EpochDay to date.toEpochDay())
-                    )
+                    try {
+                        // Convert CalendarDate to LocalDate for epoch day calculation
+                        val localDate = java.time.LocalDate.of(date.year, date.month, date.day)
+                        actionRunCallback<SelectDayAction>(
+                            actionParametersOf(Params.EpochDay to localDate.toEpochDay())
+                        )
+                    } catch (e: java.time.DateTimeException) {
+                        // Handle invalid dates gracefully - do nothing
+                        actionRunCallback<SelectDayAction>(
+                            actionParametersOf(Params.EpochDay to 0L)
+                        )
+                    }
                 }
             )
 
@@ -152,84 +218,120 @@ class ModernCalendarWidget : GlanceAppWidget() {
 }
 
 @Composable
-private fun Header(yearMonth: YearMonth, isCompact: Boolean = false, onPrev: Action, onNext: Action) {
-    val locale = Locale.getDefault()
-    val monthName = if (isCompact) {
-        yearMonth.month.getDisplayName(JTTextStyle.FULL, locale)
-            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
-    } else {
-        yearMonth.month.getDisplayName(JTTextStyle.FULL, locale)
-            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
-    }
-    val year = yearMonth.year.toString()
+private fun Header(
+    year: Int,
+    month: Int,
+    calendarService: CalendarService,
+    isCompact: Boolean = false,
+    today: CalendarDate,
+    selected: CalendarDate?,
+    onPrev: Action,
+    onNext: Action,
+    onGoToToday: Action
+) {
+    val monthName = calendarService.getMonthDisplayName(month)
+    val yearStr = year.toString()
 
     val buttonSize = if (isCompact) 28.dp else 32.dp
     val monthFontSize = if (isCompact) 16.sp else 18.sp
     val yearFontSize = if (isCompact) 12.sp else 14.sp
 
-    Row(
-        modifier = GlanceModifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+    Column(
+        modifier = GlanceModifier.fillMaxWidth()
     ) {
-        Box(
-            modifier = GlanceModifier
-                .size(buttonSize)
-                .background(WidgetColors.surfaceElevated)
-                .cornerRadius(buttonSize / 2)
-                .clickable(onPrev),
-            contentAlignment = Alignment.Center
+        // Main header row with navigation and month/year
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                provider = ImageProvider(R.drawable.ic_chevron_left),
-                contentDescription = "Previous month"
-            )
+            Box(
+                modifier = GlanceModifier
+                    .size(buttonSize)
+                    .background(WidgetColors.surfaceElevated)
+                    .cornerRadius(buttonSize / 2)
+                    .clickable(onPrev),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    provider = ImageProvider(R.drawable.ic_chevron_left),
+                    contentDescription = "Previous month"
+                )
+            }
+
+            Column(
+                modifier = GlanceModifier.defaultWeight(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = monthName,
+                    style = TextStyle(
+                        color = WidgetColors.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = monthFontSize
+                    )
+                )
+                Text(
+                    text = yearStr,
+                    style = TextStyle(
+                        color = WidgetColors.onSurfaceMuted,
+                        fontWeight = FontWeight.Normal,
+                        fontSize = yearFontSize
+                    )
+                )
+            }
+
+            // Next button with icon
+            Box(
+                modifier = GlanceModifier
+                    .size(buttonSize)
+                    .background(WidgetColors.surfaceElevated)
+                    .cornerRadius(buttonSize / 2)
+                    .clickable(onNext),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    provider = ImageProvider(R.drawable.ic_chevron_right),
+                    contentDescription = "Next month"
+                )
+            }
         }
 
-        Column(
-            modifier = GlanceModifier.defaultWeight(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = monthName,
-                style = TextStyle(
-                    color = WidgetColors.onSurface,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = monthFontSize
-                )
-            )
-            Text(
-                text = year,
-                style = TextStyle(
-                    color = WidgetColors.onSurfaceMuted,
-                    fontWeight = FontWeight.Normal,
-                    fontSize = yearFontSize
-                )
-            )
-        }
-
-        // Next button with icon
-        Box(
-            modifier = GlanceModifier
-                .size(buttonSize)
-                .background(WidgetColors.surfaceElevated)
-                .cornerRadius(buttonSize / 2)
-                .clickable(onNext),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                provider = ImageProvider(R.drawable.ic_chevron_right),
-                contentDescription = "Next month"
-            )
+        // "Go to Today" button - only show if we're not viewing the current month
+        val isCurrentMonth = (year == today.year && month == today.month)
+        if (!isCurrentMonth) {
+            Spacer(modifier = GlanceModifier.height(4.dp))
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = GlanceModifier
+                        .background(WidgetColors.todayContainer)
+                        .cornerRadius(12.dp)
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                        .clickable(onGoToToday),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Go to Today",
+                        style = TextStyle(
+                            color = WidgetColors.onTodayContainer,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 10.sp
+                        )
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun DaysOfWeekRow(firstDow: DayOfWeek, isCompact: Boolean = false) {
-    val locale = Locale.getDefault()
+private fun DaysOfWeekRow(calendarService: CalendarService, isCompact: Boolean = false) {
     val fontSize = if (isCompact) 10.sp else 11.sp
     val verticalPadding = if (isCompact) 4.dp else 8.dp
-    
+    val firstDow = calendarService.getFirstDayOfWeek()
+
     Row(modifier = GlanceModifier.fillMaxWidth()) {
         DayOfWeek.entries.toTypedArray().shifted(firstDow).forEach { dow ->
             Box(
@@ -239,7 +341,7 @@ private fun DaysOfWeekRow(firstDow: DayOfWeek, isCompact: Boolean = false) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = dow.getDisplayName(JTTextStyle.SHORT, locale),
+                    text = calendarService.getDayOfWeekDisplayName(dow),
                     style = TextStyle(
                         color = WidgetColors.onSurfaceSubtle,
                         fontWeight = FontWeight.Medium,
@@ -253,23 +355,30 @@ private fun DaysOfWeekRow(firstDow: DayOfWeek, isCompact: Boolean = false) {
 
 @Composable
 private fun MonthGridView(
-    matrix: List<List<LocalDate>>,
-    inMonth: (LocalDate) -> Boolean,
-    today: LocalDate,
-    selected: LocalDate?,
+    matrix: List<List<CalendarDate>>,
+    selected: CalendarDate?,
     bankHolidays: List<BankHoliday>,
     dayCellHeight: androidx.compose.ui.unit.Dp = 32.dp,
     dayCellRadius: androidx.compose.ui.unit.Dp = 16.dp,
-    onDayClick: (LocalDate) -> Action,
+    onDayClick: (CalendarDate) -> Action,
 ) {
     Column(modifier = GlanceModifier.fillMaxWidth()) {
         matrix.forEach { week ->
             Row(modifier = GlanceModifier.fillMaxWidth()) {
                 week.forEach { date ->
-                    val isInMonth = inMonth(date)
-                    val isToday = date == today
-                    val isSelected = selected == date
-                    val isBankHoliday = bankHolidays.any { it.date == date }
+                    val isInMonth = date.isCurrentMonth
+                    val isToday = date.isToday
+                    val isSelected =
+                        selected?.let { it.year == date.year && it.month == date.month && it.day == date.day }
+                            ?: false
+                    val isBankHoliday = try {
+                        // Convert CalendarDate to LocalDate for comparison with BankHoliday
+                        val localDate = java.time.LocalDate.of(date.year, date.month, date.day)
+                        bankHolidays.any { it.date == localDate }
+                    } catch (e: java.time.DateTimeException) {
+                        // Handle invalid dates gracefully (e.g., June 31st)
+                        false
+                    }
 
                     val bg = when {
                         isBankHoliday -> WidgetColors.bankHoliday
@@ -286,10 +395,7 @@ private fun MonthGridView(
                         else -> WidgetColors.onSurfaceSubtle
                     }
 
-                    val borderColor = when {
-                        isToday && !isSelected && !isBankHoliday -> WidgetColors.border
-                        else -> WidgetColors.transparent
-                    }
+
 
                     Box(
                         modifier = GlanceModifier
@@ -302,7 +408,7 @@ private fun MonthGridView(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = date.dayOfMonth.toString(),
+                            text = date.day.toString(),
                             style = TextStyle(
                                 color = textColor,
                                 fontWeight = when {

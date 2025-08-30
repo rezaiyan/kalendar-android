@@ -70,60 +70,70 @@ object BankHolidayData {
         out += BankHoliday("Islamic Republic Day", LocalDate.of(year, 4, 1))
         out += BankHoliday("Nature Day (Sizdah-bedar)", LocalDate.of(year, 4, 2))
 
-        // --- Islamic lunar (precise via HijrahDate) ---
-        // Helper to add all occurrences within the Gregorian year for a given Hijri month/day.
-        fun addHijriHoliday(name: String, hijriMonth: Int, hijriDay: Int) {
-            occurrencesOfHijriDateInGregorianYear(year, hijriMonth, hijriDay).forEach {
-                out += BankHoliday(name, it)
-            }
-        }
-
-        // Eid al-Fitr (1–2 Shawwal)
-        addHijriHoliday("Eid al-Fitr (1st day)", 10, 1)  // Shawwal = 10
-        addHijriHoliday("Eid al-Fitr (2nd day)", 10, 2)
-
-        // Eid al-Adha (10 Dhu al-Hijjah)
-        addHijriHoliday("Eid al-Adha", 12, 10)           // Dhu al-Hijjah = 12
-
-        // Tasua & Ashura (9–10 Muharram)
-        addHijriHoliday("Tasua (9 Muharram)", 1, 9)      // Muharram = 1
-        addHijriHoliday("Ashura (10 Muharram)", 1, 10)
-
-        // Arba’een (20 Safar)
-        addHijriHoliday("Arba’een (20 Safar)", 2, 20)    // Safar = 2
-
-        // Prophet’s Demise & Imam Hasan (28 Safar)
-        addHijriHoliday("Prophet’s Demise & Imam Hasan (28 Safar)", 2, 28)
-
-        // Mab’ath – Prophet’s Mission (27 Rajab)
-        addHijriHoliday("Mab’ath (27 Rajab)", 7, 27)     // Rajab = 7
-
-        // Eid al-Ghadir (18 Dhu al-Hijjah)
-        addHijriHoliday("Eid al-Ghadir", 12, 18)
+        // --- Islamic lunar holidays (calculated dynamically) ---
+        // Using a simplified approach to calculate approximate Islamic holiday dates
+        // Note: For production, consider using a proper Islamic calendar library
+        
+        // Calculate approximate Islamic holidays based on year
+        val islamicHolidays = calculateIslamicHolidays(year)
+        out.addAll(islamicHolidays)
 
         return out.sortedBy { it.date }
     }
 
-    // Find all Gregorian dates within a Gregorian year that correspond to a given Hijri (Umm al-Qura) month/day.
-    private fun occurrencesOfHijriDateInGregorianYear(
-        gYear: Int,
-        hMonth: Int,
-        hDay: Int
-    ): List<LocalDate> {
-        val start = LocalDate.of(gYear, 1, 1)
-        val endExclusive = LocalDate.of(gYear + 1, 1, 1)
-        val res = mutableListOf<LocalDate>()
-        var d = start
-        while (d.isBefore(endExclusive)) {
-            val h = HijrahDate.from(d)
-            val hijriMonth = h.get(ChronoField.MONTH_OF_YEAR)   // 1..12
-            val hijriDay   = h.get(ChronoField.DAY_OF_MONTH)    // 1..29/30
-            if (hijriMonth == hMonth && hijriDay == hDay) {
-                res += d
-            }
-            d = d.plusDays(1)
-        }
-        return res
+    /**
+     * Calculate approximate Islamic holiday dates for a given year
+     * This uses a simplified algorithm based on the Islamic lunar calendar
+     * Note: For production accuracy, use a proper Islamic calendar library
+     */
+    private fun calculateIslamicHolidays(year: Int): List<BankHoliday> {
+        val holidays = mutableListOf<BankHoliday>()
+        
+        // Base year for calculations (2024 as reference)
+        val baseYear = 2024
+        val baseEidFitr = LocalDate.of(2024, 4, 10) // Approximate Eid al-Fitr 2024
+        val baseEidAdha = LocalDate.of(2024, 6, 16) // Approximate Eid al-Adha 2024
+        val baseAshura = LocalDate.of(2024, 7, 17)  // Approximate Ashura 2024
+        
+        // Calculate year difference
+        val yearDiff = year - baseYear
+        
+        // Islamic lunar year is approximately 11 days shorter than Gregorian year
+        // So each year, Islamic holidays move about 11 days earlier
+        val daysOffset = yearDiff * 11
+        
+        // Calculate approximate dates for this year
+        val eidFitr1 = baseEidFitr.plusDays(daysOffset.toLong())
+        val eidFitr2 = eidFitr1.plusDays(1)
+        val eidAdha = baseEidAdha.plusDays(daysOffset.toLong())
+        val ashura = baseAshura.plusDays(daysOffset.toLong())
+        val tasua = ashura.minusDays(1)
+        
+        // Add major Islamic holidays
+        holidays += BankHoliday("Eid al-Fitr (1st day)", eidFitr1)
+        holidays += BankHoliday("Eid al-Fitr (2nd day)", eidFitr2)
+        holidays += BankHoliday("Eid al-Adha", eidAdha)
+        holidays += BankHoliday("Tasua (9 Muharram)", tasua)
+        holidays += BankHoliday("Ashura (10 Muharram)", ashura)
+        
+        // Calculate other holidays relative to Ashura
+        val arbaen = ashura.plusDays(40) // 40 days after Ashura
+        val prophetDemise = ashura.plusDays(60) // Approximate
+        val mabath = ashura.minusDays(150) // Approximate
+        val imamAliBirthday = ashura.minusDays(160) // Approximate
+        val prophetBirthday = ashura.plusDays(70) // Approximate
+        val imamMahdiBirthday = ashura.minusDays(140) // Approximate
+        val imamAliMartyrdom = eidFitr1.minusDays(10) // Approximate
+        
+        holidays += BankHoliday("Arba'een (20 Safar)", arbaen)
+        holidays += BankHoliday("Prophet's Demise & Imam Hasan (28 Safar)", prophetDemise)
+        holidays += BankHoliday("Mab'ath (27 Rajab)", mabath)
+        holidays += BankHoliday("Imam Ali's Birthday (13 Rajab)", imamAliBirthday)
+        holidays += BankHoliday("Prophet's Birthday & Imam Sadegh (17 Rabi' al-awwal)", prophetBirthday)
+        holidays += BankHoliday("Imam Mahdi's Birthday (15 Sha'ban)", imamMahdiBirthday)
+        holidays += BankHoliday("Imam Ali's Martyrdom (21 Ramadan)", imamAliMartyrdom)
+        
+        return holidays
     }
 
     // -------------------- Existing countries (unchanged from my previous reply) --------------------
