@@ -23,6 +23,7 @@ import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+
 import androidx.glance.background
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
@@ -51,6 +52,7 @@ import com.alirezaiyan.kalendar.data.Country
 import com.alirezaiyan.kalendar.widget.ui.WidgetColors
 import androidx.compose.runtime.collectAsState
 import com.alirezaiyan.kalendar.widget.utils.CalendarUtils.buildMonthGrid
+import com.alirezaiyan.kalendar.MainActivity
 import com.alirezaiyan.kalendar.widget.utils.CalendarUtils.shifted
 import com.alirezaiyan.kalendar.data.BankHolidayData
 import java.time.DayOfWeek
@@ -102,12 +104,13 @@ class ModernCalendarWidget : GlanceAppWidget() {
             modifier = GlanceModifier
                 .fillMaxSize()
                 .background(WidgetColors.surface)
-                .padding(20.dp),
-            verticalAlignment = Alignment.Top
+                .padding(6.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             // Modern Header
             Header(
                 yearMonth = yearMonth,
+                isCompact = true,
                 onPrev = actionRunCallback<NavigateMonthAction>(
                     actionParametersOf(Params.Direction to -1)
                 ),
@@ -116,12 +119,12 @@ class ModernCalendarWidget : GlanceAppWidget() {
                 ),
             )
 
-            Spacer(modifier = GlanceModifier.height(16.dp))
+            Spacer(modifier = GlanceModifier.height(2.dp))
 
             // Days of week with modern styling
-            DaysOfWeekRow(firstDow)
+            DaysOfWeekRow(firstDow, true)
 
-            Spacer(modifier = GlanceModifier.height(12.dp))
+            Spacer(modifier = GlanceModifier.height(2.dp))
 
             // Calendar grid with premium spacing
             MonthGridView(
@@ -130,6 +133,8 @@ class ModernCalendarWidget : GlanceAppWidget() {
                 today = today,
                 selected = selected,
                 bankHolidays = bankHolidays,
+                dayCellHeight = 26.dp,
+                dayCellRadius = 13.dp,
                 onDayClick = { date ->
                     actionRunCallback<SelectDayAction>(
                         actionParametersOf(Params.EpochDay to date.toEpochDay())
@@ -137,20 +142,30 @@ class ModernCalendarWidget : GlanceAppWidget() {
                 }
             )
 
-            Spacer(modifier = GlanceModifier.height(16.dp))
+            Spacer(modifier = GlanceModifier.height(2.dp))
 
-            // Minimal footer
-            FooterOpenCalendar()
+            FooterOpenCalendar(context)
         }
     }
+
+
 }
 
 @Composable
-private fun Header(yearMonth: YearMonth, onPrev: Action, onNext: Action) {
+private fun Header(yearMonth: YearMonth, isCompact: Boolean = false, onPrev: Action, onNext: Action) {
     val locale = Locale.getDefault()
-    val monthName = yearMonth.month.getDisplayName(JTTextStyle.FULL, locale)
-        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+    val monthName = if (isCompact) {
+        yearMonth.month.getDisplayName(JTTextStyle.FULL, locale)
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+    } else {
+        yearMonth.month.getDisplayName(JTTextStyle.FULL, locale)
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+    }
     val year = yearMonth.year.toString()
+
+    val buttonSize = if (isCompact) 28.dp else 32.dp
+    val monthFontSize = if (isCompact) 16.sp else 18.sp
+    val yearFontSize = if (isCompact) 12.sp else 14.sp
 
     Row(
         modifier = GlanceModifier.fillMaxWidth(),
@@ -158,9 +173,9 @@ private fun Header(yearMonth: YearMonth, onPrev: Action, onNext: Action) {
     ) {
         Box(
             modifier = GlanceModifier
-                .size(32.dp)
+                .size(buttonSize)
                 .background(WidgetColors.surfaceElevated)
-                .cornerRadius(16.dp)
+                .cornerRadius(buttonSize / 2)
                 .clickable(onPrev),
             contentAlignment = Alignment.Center
         ) {
@@ -179,7 +194,7 @@ private fun Header(yearMonth: YearMonth, onPrev: Action, onNext: Action) {
                 style = TextStyle(
                     color = WidgetColors.onSurface,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
+                    fontSize = monthFontSize
                 )
             )
             Text(
@@ -187,7 +202,7 @@ private fun Header(yearMonth: YearMonth, onPrev: Action, onNext: Action) {
                 style = TextStyle(
                     color = WidgetColors.onSurfaceMuted,
                     fontWeight = FontWeight.Normal,
-                    fontSize = 14.sp
+                    fontSize = yearFontSize
                 )
             )
         }
@@ -195,9 +210,9 @@ private fun Header(yearMonth: YearMonth, onPrev: Action, onNext: Action) {
         // Next button with icon
         Box(
             modifier = GlanceModifier
-                .size(32.dp)
+                .size(buttonSize)
                 .background(WidgetColors.surfaceElevated)
-                .cornerRadius(16.dp)
+                .cornerRadius(buttonSize / 2)
                 .clickable(onNext),
             contentAlignment = Alignment.Center
         ) {
@@ -210,14 +225,17 @@ private fun Header(yearMonth: YearMonth, onPrev: Action, onNext: Action) {
 }
 
 @Composable
-private fun DaysOfWeekRow(firstDow: DayOfWeek) {
+private fun DaysOfWeekRow(firstDow: DayOfWeek, isCompact: Boolean = false) {
     val locale = Locale.getDefault()
+    val fontSize = if (isCompact) 10.sp else 11.sp
+    val verticalPadding = if (isCompact) 4.dp else 8.dp
+    
     Row(modifier = GlanceModifier.fillMaxWidth()) {
         DayOfWeek.entries.toTypedArray().shifted(firstDow).forEach { dow ->
             Box(
                 modifier = GlanceModifier
                     .defaultWeight()
-                    .padding(vertical = 8.dp),
+                    .padding(vertical = verticalPadding),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -225,7 +243,7 @@ private fun DaysOfWeekRow(firstDow: DayOfWeek) {
                     style = TextStyle(
                         color = WidgetColors.onSurfaceSubtle,
                         fontWeight = FontWeight.Medium,
-                        fontSize = 11.sp
+                        fontSize = fontSize
                     )
                 )
             }
@@ -240,6 +258,8 @@ private fun MonthGridView(
     today: LocalDate,
     selected: LocalDate?,
     bankHolidays: List<BankHoliday>,
+    dayCellHeight: androidx.compose.ui.unit.Dp = 32.dp,
+    dayCellRadius: androidx.compose.ui.unit.Dp = 16.dp,
     onDayClick: (LocalDate) -> Action,
 ) {
     Column(modifier = GlanceModifier.fillMaxWidth()) {
@@ -274,10 +294,10 @@ private fun MonthGridView(
                     Box(
                         modifier = GlanceModifier
                             .defaultWeight()
-                            .height(40.dp)
+                            .height(dayCellHeight)
                             .padding(1.dp)
                             .background(bg)
-                            .cornerRadius(20.dp)
+                            .cornerRadius(dayCellRadius)
                             .clickable(onDayClick(date)),
                         contentAlignment = Alignment.Center
                     ) {
@@ -302,7 +322,7 @@ private fun MonthGridView(
 }
 
 @Composable
-private fun FooterOpenCalendar() {
+private fun FooterOpenCalendar(context: Context) {
     Row(
         modifier = GlanceModifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -313,11 +333,7 @@ private fun FooterOpenCalendar() {
                 .background(WidgetColors.surfaceElevated)
                 .cornerRadius(20.dp)
                 .padding(horizontal = 16.dp, vertical = 8.dp)
-                .clickable(
-                    actionStartActivity(
-                        Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_APP_CALENDAR) }
-                    )
-                ),
+                .clickable(actionStartActivity(Intent(context, MainActivity::class.java))),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -331,3 +347,4 @@ private fun FooterOpenCalendar() {
         }
     }
 }
+
