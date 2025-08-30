@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="gw_surface">#F7F7FB</color>
+    <color name="gw_on_surface">#1F2937</color>
+    <color name="gw_on_surface_muted">#9CA3AF</color>
+    <color name="gw_primary">#4F46E5</color>
+    <color name="gw_primary_container">#E0E7FF</color>
+    <color name="gw_on_primary_container">#1E1B4B</color>
+    <color name="gw_today_container">#D1FAE5</color>
+    <color name="gw_on_today_container">#064E3B</color>
+</resources>

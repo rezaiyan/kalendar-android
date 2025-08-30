@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Kalendar</string>
+    <string name="calendar_widget_description">Modern calendar widget showing current month with previous/next month days in alpha</string>
+</resources>
