@@ -1,11 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="gw_surface">#1C1C20</color>
-    <color name="gw_on_surface">#E5E7EB</color>
-    <color name="gw_on_surface_muted">#9CA3AF</color>
-    <color name="gw_primary">#8B87FF</color>
-    <color name="gw_primary_container">#2D2B55</color>
-    <color name="gw_on_primary_container">#E0E7FF</color>
-    <color name="gw_today_container">#064E3B</color>
-    <color name="gw_on_today_container">#A7F3D0</color>
+    <color name="ic_calendar_bg">#101028</color>
 </resources>
