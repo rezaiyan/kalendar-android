@@ -23,16 +23,12 @@ object CalendarUtils {
             }
         }
     }
-    
-    fun Array<DayOfWeek>.shifted(first: DayOfWeek): List<DayOfWeek> {
-        val index = indexOf(first)
-        return if (index <= 0) {
-            toList()
-        } else {
-            slice(index until size) + slice(0 until index)
-        }
+
+    fun Array<DayOfWeek>.shifted(firstDay: DayOfWeek): Array<DayOfWeek> {
+        val shift = firstDay.value - 1
+        return Array(size) { this[(it + shift) % size] }
     }
-    
+
     fun getFirstDayOfWeek(locale: Locale = Locale.getDefault()): DayOfWeek {
         return WeekFields.of(locale).firstDayOfWeek
     }

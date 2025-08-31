@@ -2,4 +2,6 @@
 <resources>
     <!-- Background color for adaptive icon -->
     <color name="ic_calendar_bg">#FFFFFF</color>
+    <!-- Notification color -->
+    <color name="notification_color">#FF6200EE</color>
 </resources>

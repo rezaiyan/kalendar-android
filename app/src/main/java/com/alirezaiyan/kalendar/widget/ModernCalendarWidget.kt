@@ -58,18 +58,8 @@ import com.alirezaiyan.kalendar.MainActivity
 import com.alirezaiyan.kalendar.data.BankHolidayData
 import com.alirezaiyan.kalendar.calendar.CalendarDate
 import com.alirezaiyan.kalendar.calendar.CalendarService
+import com.alirezaiyan.kalendar.widget.utils.CalendarUtils.shifted
 import java.time.DayOfWeek
-import java.time.LocalDate
-import java.time.YearMonth
-import java.time.temporal.WeekFields
-import java.util.Locale
-import java.time.format.TextStyle as JTTextStyle
-
-// Utility function for shifting day of week array
-private fun Array<DayOfWeek>.shifted(firstDay: DayOfWeek): Array<DayOfWeek> {
-    val shift = firstDay.value - 1
-    return Array(size) { this[(it + shift) % size] }
-}
 
 class ModernCalendarWidget : GlanceAppWidget() {
 

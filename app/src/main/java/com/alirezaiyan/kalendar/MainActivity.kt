@@ -1,11 +1,15 @@
 package com.alirezaiyan.kalendar
 
+import android.Manifest
 import android.content.Intent
-import android.net.Uri
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +38,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -61,24 +64,70 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.alirezaiyan.kalendar.calendar.CalendarService
 import com.alirezaiyan.kalendar.data.Country
 import com.alirezaiyan.kalendar.data.CountryRepository
 import com.alirezaiyan.kalendar.ui.theme.KalendarTheme
+import com.alirezaiyan.kalendar.widget.utils.ModernCalendarWidgetReceiver
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.launch
-import androidx.core.net.toUri
 
 class MainActivity : ComponentActivity() {
+    
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            // Permission granted, initialize Firebase messaging
+            initializeFirebaseMessaging()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Request notification permission for Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            when {
+                ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED -> {
+                    // Permission already granted
+                    initializeFirebaseMessaging()
+                }
+                else -> {
+                    // Request permission
+                    requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        } else {
+            // For older versions, initialize Firebase messaging directly
+            initializeFirebaseMessaging()
+        }
+        
         setContent {
             KalendarTheme {
                 CalendarApp(
                     Modifier.systemBarsPadding()
                 )
             }
+        }
+    }
+    
+    private fun initializeFirebaseMessaging() {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                return@addOnCompleteListener
+            }
+            
+            // Get new FCM registration token
+            val token = task.result
+            Log.d("FCM_TOKEN", "FCM Registration Token: $token")
         }
     }
 }
