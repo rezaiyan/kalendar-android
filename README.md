@@ -1,4 +1,5 @@
-# ![App Icon](app/src/main/ic_launcher-playstore.png) Kalendar
+# <img src="app/src/main/ic_launcher-playstore.png" alt="App Icon" width="48" height="48" valign="middle"> Kalendar
+
 
 A modern, minimal calendar widget for Android that displays the current month with bank holidays highlighted.
 
@@ -26,14 +27,6 @@ A modern, minimal calendar widget for Android that displays the current month wi
 ### Solar Hijri Calendar
 - 🇮🇷 Iran (Persian Calendar)
 
-## 📱 Widget Sizes
-
-| Size | Dimensions | Features |
-|------|------------|----------|
-| Small | 240×200dp | Compact calendar view |
-| Medium | 320×260dp | Full calendar with navigation |
-| Large | 400×320dp | Premium layout with all features |
-
 ## 🎨 Design
 
 - **Modern Minimal** - Clean, uncluttered interface
@@ -47,18 +40,15 @@ A modern, minimal calendar widget for Android that displays the current month wi
 - **Glance** - Widget framework
 - **DataStore** - Preferences storage
 - **Kotlin Coroutines** - Asynchronous operations
-- **SOLID Principles** - Clean architecture
+- **SOLID Principles**
+
 
 ## 📸 Screenshots
 
-### Widget Preview
-![Widget Preview](screenshots/sc1.png)
+| Main App | Widget Preview | Widget |
+| -------------- | -------- | ----------------- |
+| ![Widget Preview](screenshots/sc1.png) | ![Main App](screenshots/sc2.png) | ![Country Selection](screenshots/sc3.png) |
 
-### Main App
-![Main App](screenshots/sc2.png)
-
-### Country Selection
-![Country Selection](screenshots/sc3.png)
 
 ## 🚀 Getting Started
 
