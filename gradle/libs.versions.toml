@@ -11,6 +11,7 @@ composeBom = "2025.08.01"
 firebaseBom = "34.2.0"
 glance = "1.1.1"
 datastore = "1.1.7"
+fragment = "1.8.5"
 persiandate = "1.7.1"
 googleServices = "4.4.3"
 crashlytics = "3.0.6"
@@ -35,6 +36,7 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
 androidx-glance-material3 = { group = "androidx.glance", name = "glance-material3", version.ref = "glance" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+androidx-fragment-ktx = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "fragment" }
 
 # Firebase dependencies
 
